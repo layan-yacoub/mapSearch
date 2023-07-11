@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>Map Search</title>
+    <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no">
+    <link href="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css" rel="stylesheet">
+    <script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>
+    <style>
+        body { margin: 0; padding: 0; }
+        #map { position: absolute; top: 0; bottom: 0; width: 100%; }
+    </style>
+</head>
+<body>
+<script src="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v5.0.0/mapbox-gl-geocoder.min.js"></script>
+<link rel="stylesheet" href="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v5.0.0/mapbox-gl-geocoder.css" type="text/css">
+<script src="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-directions/v4.1.1/mapbox-gl-directions.js"></script>
+<link rel="stylesheet" href="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-directions/v4.1.1/mapbox-gl-directions.css" type="text/css">
+<style>
+    #geocoder-container > div {
+        min-width: 100%;
+    }
+    .geocoder {
+        position: absolute;
+        z-index: 1;
+        width: 100%;
+        left: 100%;
+        margin-left: -25%;
+        top: 10px;
+        min-width: 100%;
+    }
+    .mapboxgl-ctrl-geocoder {
+        min-width: 100%;
+    }
+    #map {
+        margin-top: 60px;
+    }
+</style>
+
+<h1>City Search</h1>
+<div id="map"></div>
+<div id="geocoder" class="geocoder"></div>
+
+<script>
+    //the map
+    mapboxgl.accessToken = 'pk.eyJ1IjoibGF5YW4yMDIzIiwiYSI6ImNsandoczAwMzBncWUzbHA0dHJ4N3p1dGMifQ.u6oiwhcE96iHu6YVHFQhCw';
+    const map = new mapboxgl.Map({
+        container: 'map', // container ID
+        style: 'mapbox://styles/mapbox/streets-v12', // style URL
+        center: [-74.5, 40], // starting position
+        zoom: 9 // starting zoom
+    });
+
+    // Add zoom and rotation controls to the map.
+    map.addControl(new mapboxgl.NavigationControl());
+
+    // Add search control to the map.
+    const geocoder = new MapboxGeocoder({
+        accessToken: mapboxgl.accessToken,
+        marker: {
+            color: 'orange'
+        },
+        mapboxgl: mapboxgl
+    });
+
+    // Call the searchByCountry function when a search is performed in the geocoder
+    geocoder.on('result', function(result) {
+        const countryName = result.result.text;
+        searchByCountry(countryName);
+    });
+
+    document.getElementById('geocoder').appendChild(geocoder.onAdd(map));
+
+    //add directions control
+    map.addControl(
+        new MapboxDirections({
+            accessToken: mapboxgl.accessToken
+        }),
+        'top-left'
+    );
+
+    // Function to send the country name to the /search endpoint
+    function searchByCountry(countryName) {
+        // Send an AJAX request to the Spring Boot controller endpoint
+        const xhr = new XMLHttpRequest();
+        const url = '/search?countryName=' + encodeURIComponent(countryName);
+        xhr.open('POST', url, true);
+        xhr.setRequestHeader('Content-Type', 'application/json');
+
+        xhr.onreadystatechange = function() {
+            if (xhr.readyState === XMLHttpRequest.DONE) {
+                if (xhr.status === 200) {
+                    console.log('Search request sent successfully');
+                } else {
+                    console.error('Failed to send search request');
+                }
+            }
+        };
+
+        xhr.send();
+    }
+
+</script>
+</body>
+</html>
